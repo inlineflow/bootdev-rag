@@ -27,15 +27,20 @@ def strip_punctuation(s: str) -> str:
     translator = str.maketrans("", "", string.punctuation)
     return s.translate(translator)
 
-def process(d: str) -> d:
+def preprocess(d: str) -> str:
     transformers = [str.lower, strip_punctuation]
+    val = d
+    for t in transformers:
+        val = t(val)
+
+    return val
 
 def keyword_search(query: str):
     q = query.lower()
     movies = load_movies()
     result:List[Movie] = []
     for m in movies:
-        if q in m.title.lower():
+        if q in preprocess(m.title):
             result.append(m)
 
     f_result = sorted(result, key=lambda item: item.id)[:5]

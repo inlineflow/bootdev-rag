@@ -1,67 +1,14 @@
 #!/usr/bin/env python3
 
-import argparse, json, string
-from dataclasses import dataclass
+import argparse
 from typing import List
-from nltk.stem import PorterStemmer
+from inv_index import InvertedIndex
+from tokens import Movie, load_movies, preprocess
 
-@dataclass
-class Movie:
-    id: int
-    title: str
-    description: str
 
-@dataclass
-class Data:
-    movies: List[Movie]
-
-stemmer = PorterStemmer()
-
-def load_movies() -> List[Movie]:
-    with open("data/movies.json") as f:
-        data = json.load(f)
-        movies = [
-                Movie(**movie_dict) for movie_dict in data.get("movies", [])
-                ]
-        return movies
-
-def tokenize(s: str) -> List[str]:
-    result = list(filter(lambda i: i != "", s.split(" ")))
-    return result
-
-def strip_punctuation(s: str) -> str:
-    translator = str.maketrans("", "", string.punctuation)
-    return s.translate(translator)
-
-def load_stopwords() -> List[str]:
-    with open("data/stopwords.txt") as f:
-        result = f.read().splitlines()
-        return result
-
-def remove_stopwords(tokens: List[str]) -> List[str]:
-    stopwords = load_stopwords()
-    result = set(tokens).difference(stopwords)
-    return list(result)
-
-def prep_query(q: str) -> List[str]:
-    tokens = remove_stopwords(tokenize(q.lower()))
-    result = list(map(stemmer.stem, tokens))
-    return result
-
-def preprocess(d: str) -> List[str]:
-    transformers = [str.lower, strip_punctuation]
-    val = d
-    for t in transformers:
-        val = t(val)
-
-    res = tokenize(val)
-    result = remove_stopwords(res)
-    result = list(map(stemmer.stem, result))
-
-    return result
 
 def keyword_search(query: str):
-    q = prep_query(query)
+    q = preprocess(query)
     movies = load_movies()
     result:List[Movie] = []
     for m in movies:
@@ -87,12 +34,22 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    build_parser = subparsers.add_parser("build", help="Build index")
+    save = subparsers.add_parser("save", help="Build index")
+
     args = parser.parse_args()
 
     match args.command:
         case "search":
             keyword_search(args.query)
             pass
+        case "build":
+            pass
+            index = InvertedIndex()
+            index.build()
+            index.save()
+            print(index.get_documents("merida")[0])
+            # print(index.index)
         case _:
             parser.print_help()
 

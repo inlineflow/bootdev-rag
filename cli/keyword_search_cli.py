@@ -2,7 +2,7 @@
 
 import argparse, json, string
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import List
 
 @dataclass
 class Movie:
@@ -31,8 +31,18 @@ def strip_punctuation(s: str) -> str:
     translator = str.maketrans("", "", string.punctuation)
     return s.translate(translator)
 
+def load_stopwords() -> List[str]:
+    with open("data/stopwords.txt") as f:
+        result = f.read().splitlines()
+        return result
+
+def remove_stopwords(tokens: List[str]) -> List[str]:
+    stopwords = load_stopwords()
+    result = set(tokens).difference(stopwords)
+    return list(result)
+
 def prep_query(q: str) -> List[str]:
-    return tokenize(q.lower())
+    return remove_stopwords(tokenize(q.lower()))
 
 def preprocess(d: str) -> List[str]:
     transformers = [str.lower, strip_punctuation]
@@ -40,7 +50,9 @@ def preprocess(d: str) -> List[str]:
     for t in transformers:
         val = t(val)
 
-    result = tokenize(val)
+    res = tokenize(val)
+    result = remove_stopwords(res)
+
 
     return result
 
@@ -54,12 +66,12 @@ def keyword_search(query: str):
         for qt in q_set:
             success = list(filter(lambda tt: qt in tt, title_tokens_set))
             if len(success) != 0:
-                print("success: ", success)
-                print("query: ", q_set)
+                # print("success: ", success)
+                # print("query: ", q_set)
                 result.append(m)
                 break
 
-    f_result = sorted(result, key=lambda item: item.id)
+    f_result = sorted(result, key=lambda item: item.id)[:5]
     for i, r in enumerate(f_result):
         print(f"{i+1}. {r.title}")
 

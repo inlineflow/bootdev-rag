@@ -3,6 +3,7 @@
 import argparse, json, string
 from dataclasses import dataclass
 from typing import List
+from nltk.stem import PorterStemmer
 
 @dataclass
 class Movie:
@@ -14,6 +15,7 @@ class Movie:
 class Data:
     movies: List[Movie]
 
+stemmer = PorterStemmer()
 
 def load_movies() -> List[Movie]:
     with open("data/movies.json") as f:
@@ -42,7 +44,9 @@ def remove_stopwords(tokens: List[str]) -> List[str]:
     return list(result)
 
 def prep_query(q: str) -> List[str]:
-    return remove_stopwords(tokenize(q.lower()))
+    tokens = remove_stopwords(tokenize(q.lower()))
+    result = list(map(stemmer.stem, tokens))
+    return result
 
 def preprocess(d: str) -> List[str]:
     transformers = [str.lower, strip_punctuation]
@@ -52,7 +56,7 @@ def preprocess(d: str) -> List[str]:
 
     res = tokenize(val)
     result = remove_stopwords(res)
-
+    result = list(map(stemmer.stem, result))
 
     return result
 
@@ -74,9 +78,6 @@ def keyword_search(query: str):
     f_result = sorted(result, key=lambda item: item.id)[:5]
     for i, r in enumerate(f_result):
         print(f"{i+1}. {r.title}")
-
-    # print(x[0:5])
-
 
 
 def main() -> None:

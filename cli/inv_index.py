@@ -1,5 +1,6 @@
+from collections import defaultdict, Counter
 import os
-from typing import Counter, Dict, List, Set
+from typing import Counter as CounterType, Dict, List, Set
 import pickle
 
 from tokens import Movie, load_movies, preprocess
@@ -8,16 +9,21 @@ from tokens import Movie, load_movies, preprocess
 class InvertedIndex:
     index: Dict[str, Set[int]]
     docmap: Dict[int, Movie]
-    term_frequencies: Dict[int, Counter]
+    term_frequencies: Dict[int, CounterType]
 
     def __init__(self) -> None:
-        self.index = {}
+        self.index = defaultdict(set)
+        self.term_frequencies = defaultdict(Counter)
         self.docmap = {}
 
     def __add_document(self, doc_id:int, text:str) -> None:
         tokens = preprocess(text)
         for t in tokens:
-            self.index.setdefault(t, set()).add(doc_id)
+            self.index[t].add(doc_id)
+            self.term_frequencies[doc_id][t] += 1
+            # self.index.setdefault(t, set()).add(doc_id)
+            # self.term_frequencies.setdefault(doc_id, Counter())[t]+=1
+
             # if t not in self.index:
             #     self.index[t] = set([doc_id])
             #     continue
@@ -44,6 +50,7 @@ class InvertedIndex:
         cache_path = os.path.join(os.getcwd(), "cache")
         index_path = os.path.join(cache_path, "index.pkl")
         docmap_path = os.path.join(cache_path, "docmap.pkl")
+        term_frequencies_path = os.path.join(cache_path, "term_frequencies.pkl")
         os.makedirs(cache_path, exist_ok=True)
         with open(index_path, "wb") as f:
             pickle.dump(self.index, f)
@@ -51,10 +58,14 @@ class InvertedIndex:
         with open(docmap_path, "wb") as f:
             pickle.dump(self.docmap, f)
 
+        with open(term_frequencies_path, "wb") as f:
+            pickle.dump(self.docmap, f)
+
     def load(self) ->None:
         cache_path = os.path.join(os.getcwd(), "cache")
         index_path = os.path.join(cache_path, "index.pkl")
         docmap_path = os.path.join(cache_path, "docmap.pkl")
+        term_frequencies_path = os.path.join(cache_path, "term_frequencies.pkl")
         if not os.path.exists(index_path):
             raise FileNotFoundError(f"{index_path} doesn't exist")
 
@@ -66,3 +77,8 @@ class InvertedIndex:
 
         with open(docmap_path, "rb") as f:
             self.docmap = pickle.load(f)
+
+        with open(term_frequencies_path, "rb") as f:
+            self.term_frequencies = pickle.load(f)
+
+

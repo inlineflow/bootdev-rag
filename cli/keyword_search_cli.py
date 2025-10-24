@@ -23,27 +23,43 @@ def load_movies() -> List[Movie]:
                 ]
         return movies
 
+def tokenize(s: str) -> List[str]:
+    result = list(filter(lambda i: i != "", s.split(" ")))
+    return result
+
 def strip_punctuation(s: str) -> str:
     translator = str.maketrans("", "", string.punctuation)
     return s.translate(translator)
 
-def preprocess(d: str) -> str:
+def prep_query(q: str) -> List[str]:
+    return tokenize(q.lower())
+
+def preprocess(d: str) -> List[str]:
     transformers = [str.lower, strip_punctuation]
     val = d
     for t in transformers:
         val = t(val)
 
-    return val
+    result = tokenize(val)
+
+    return result
 
 def keyword_search(query: str):
-    q = query.lower()
+    q = prep_query(query)
     movies = load_movies()
     result:List[Movie] = []
     for m in movies:
-        if q in preprocess(m.title):
-            result.append(m)
+        q_set = set(q)
+        title_tokens_set = set(preprocess(m.title))
+        for qt in q_set:
+            success = list(filter(lambda tt: qt in tt, title_tokens_set))
+            if len(success) != 0:
+                print("success: ", success)
+                print("query: ", q_set)
+                result.append(m)
+                break
 
-    f_result = sorted(result, key=lambda item: item.id)[:5]
+    f_result = sorted(result, key=lambda item: item.id)
     for i, r in enumerate(f_result):
         print(f"{i+1}. {r.title}")
 

@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Set
+from typing import Counter, Dict, List, Set
 import pickle
 
 from tokens import Movie, load_movies, preprocess
@@ -8,6 +8,7 @@ from tokens import Movie, load_movies, preprocess
 class InvertedIndex:
     index: Dict[str, Set[int]]
     docmap: Dict[int, Movie]
+    term_frequencies: Dict[int, Counter]
 
     def __init__(self) -> None:
         self.index = {}

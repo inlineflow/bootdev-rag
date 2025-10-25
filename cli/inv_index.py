@@ -3,7 +3,9 @@ import os
 from typing import Counter as CounterType, Dict, List, Set
 import pickle
 
-from tokens import Movie, load_movies, preprocess
+from nltk import tokenize
+
+from tokens import Movie, load_movies, preprocess, remove_stopwords, strip_punctuation, tokenize
 
 
 class InvertedIndex:
@@ -59,7 +61,7 @@ class InvertedIndex:
             pickle.dump(self.docmap, f)
 
         with open(term_frequencies_path, "wb") as f:
-            pickle.dump(self.docmap, f)
+            pickle.dump(self.term_frequencies, f)
 
     def load(self) ->None:
         cache_path = os.path.join(os.getcwd(), "cache")
@@ -81,4 +83,9 @@ class InvertedIndex:
         with open(term_frequencies_path, "rb") as f:
             self.term_frequencies = pickle.load(f)
 
+    def get_tf(self, doc_id:int, term:str) -> int:
+        token = preprocess(term)
+        if len(token) > 1:
+            raise ValueError(f"Provided term must have exactly 1 token, actual term: {token}")
 
+        return self.term_frequencies[doc_id][token[0]]

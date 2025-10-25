@@ -63,6 +63,12 @@ def main() -> None:
     )
     idf_parse.add_argument("term", type=str, help="Term")
 
+    tfidf_parse = subparsers.add_parser(
+        "tfidf", help="Get term frequency for specified term in the specified document"
+    )
+    tfidf_parse.add_argument("doc_id", type=int, help="Document ID")
+    tfidf_parse.add_argument("term", type=str, help="Term")
+
     args = parser.parse_args()
 
     match args.command:
@@ -74,10 +80,7 @@ def main() -> None:
             except Exception as e:
                 print(e)
                 exit()
-
-            pass
         case "build":
-            pass
             index = InvertedIndex()
             index.build()
             index.save()
@@ -90,6 +93,14 @@ def main() -> None:
             index.load()
             idf = index.get_idf(args.term)
             print(f"Inverted document frequency of '{args.term}': {idf:.2f}")
+        case "tfidf":
+            index = InvertedIndex()
+            index.load()
+            tf = index.get_tf(args.doc_id, args.term)
+            idf = index.get_idf(args.term)
+            tf_idf = tf * idf
+            print(f"TF-IDF score of '{args.term}' in document '{args.doc_id}': {tf_idf:.2f}")
+            
         case _:
             parser.print_help()
 

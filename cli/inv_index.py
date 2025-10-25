@@ -1,4 +1,5 @@
 from collections import defaultdict, Counter
+import math
 import os
 from typing import Counter as CounterType, Dict, List, Set
 import pickle
@@ -89,3 +90,11 @@ class InvertedIndex:
             raise ValueError(f"Provided term must have exactly 1 token, actual term: {token}")
 
         return self.term_frequencies[doc_id][token[0]]
+
+    def get_idf(self, term:str) -> float:
+        query = preprocess(term)
+        doc_count = len(self.docmap)
+        term_doc_count = len(self.index[query[0]])
+        return math.log((doc_count + 1) / (term_doc_count + 1))
+
+        return 0

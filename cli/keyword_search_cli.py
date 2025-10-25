@@ -38,7 +38,6 @@ def keyword_search(query: str, index: InvertedIndex):
         if len(result) >= 5:
             break
 
-
     f_result = sorted(result, key=lambda item: item.id)[:5]
     for i, r in enumerate(f_result):
         print(f"{i+1}. {r.title}")
@@ -58,6 +57,11 @@ def main() -> None:
     )
     tf_parser.add_argument("doc_id", type=int, help="Document ID")
     tf_parser.add_argument("term", type=str, help="Term")
+
+    idf_parse = subparsers.add_parser(
+        "idf", help="Get the inverse document frequency for the speciifed term"
+    )
+    idf_parse.add_argument("term", type=str, help="Term")
 
     args = parser.parse_args()
 
@@ -81,6 +85,11 @@ def main() -> None:
             index = InvertedIndex()
             index.load()
             print(index.get_tf(args.doc_id, args.term))
+        case "idf":
+            index = InvertedIndex()
+            index.load()
+            idf = index.get_idf(args.term)
+            print(f"Inverted document frequency of '{args.term}': {idf:.2f}")
         case _:
             parser.print_help()
 

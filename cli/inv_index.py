@@ -4,8 +4,6 @@ import os
 from typing import Counter as CounterType, Dict, List, Set
 import pickle
 
-from nltk import tokenize
-
 from tokens import Movie, load_movies, preprocess, remove_stopwords, strip_punctuation, tokenize
 
 
@@ -34,7 +32,7 @@ class InvertedIndex:
             # self.index[t] = set([*self.index[t], doc_id])
 
     def get_documents(self, term:str) -> List[int]:
-        t = term.lower()
+        t = preprocess(term)[0]
         if t not in self.index:
             return []
 
@@ -97,4 +95,19 @@ class InvertedIndex:
         term_doc_count = len(self.index[query[0]])
         return math.log((doc_count + 1) / (term_doc_count + 1))
 
-        return 0
+    def get_bm25_idf(self, term: str) -> float:
+        t = preprocess(term)
+        if len(t) != 1:
+            raise ValueError("Term must be a single token")
+
+        q = t[0]
+        df = len(self.index.get(q, set()))
+        N = len(self.docmap)
+        if term == "grizzly":
+            print(df)
+            print(self.index[q])
+            print(N)
+            print(t)
+        bm25 = math.log((N - df + 0.5) / (df + 0.5) + 1)
+
+        return bm25

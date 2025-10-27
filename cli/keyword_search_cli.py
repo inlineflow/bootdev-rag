@@ -2,6 +2,7 @@
 
 import argparse
 from typing import List
+from search_utils import BM25_K1
 from inv_index import InvertedIndex
 from tokens import Movie, preprocess
 
@@ -71,6 +72,12 @@ def main() -> None:
 
     bm25_idf_command = subparsers.add_parser("bm25idf", help="Get BM25 IDF score for a given term")
     bm25_idf_command.add_argument("term", type=str, help="Term")
+
+    bm25_tf = subparsers.add_parser("bm25tf", help="Get BM25 TF score for a given term")
+    bm25_tf.add_argument("doc_id", type=int, help="doc id")
+    bm25_tf.add_argument("term", type=str, help="Term")
+    bm25_tf.add_argument("k1", type=float, nargs="?", default=BM25_K1, help="Saturation constant, used for tuning")
+    
     args = parser.parse_args()
 
     match args.command:
@@ -107,6 +114,13 @@ def main() -> None:
             index.load()
             bm25idf = index.get_bm25_idf(args.term)
             print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
+        case "bm25tf":
+            index = InvertedIndex()
+            index.load()
+            bm25tf = index.get_bm25_tf(args.doc_id, args.term, args.k1)
+            print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}")
+
+
         case _:
             parser.print_help()
 

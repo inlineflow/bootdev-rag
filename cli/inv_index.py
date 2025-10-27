@@ -4,6 +4,7 @@ import os
 from typing import Counter as CounterType, Dict, List, Set
 import pickle
 
+from search_utils import BM25_K1
 from tokens import Movie, load_movies, preprocess, remove_stopwords, strip_punctuation, tokenize
 
 
@@ -111,3 +112,10 @@ class InvertedIndex:
         bm25 = math.log((N - df + 0.5) / (df + 0.5) + 1)
 
         return bm25
+
+    def get_bm25_tf(self, doc_id:int, term:str, k1: float = BM25_K1) -> float:
+        base_tf = self.get_tf(doc_id, term)
+        bm25_tf = (base_tf * (k1 + 1)) / (base_tf + k1)
+        
+        return bm25_tf
+

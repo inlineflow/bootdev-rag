@@ -4,33 +4,29 @@ import os
 from typing import Counter as CounterType, Dict, List, Set
 import pickle
 
-from search_utils import BM25_K1
-from tokens import Movie, load_movies, preprocess, remove_stopwords, strip_punctuation, tokenize
+from search_utils import BM25_B, BM25_K1
+from tokens import Movie, load_movies, preprocess
 
 
 class InvertedIndex:
     index: Dict[str, Set[int]]
     docmap: Dict[int, Movie]
     term_frequencies: Dict[int, CounterType]
+    doc_lengths: Dict[int, int]
 
     def __init__(self) -> None:
         self.index = defaultdict(set)
         self.term_frequencies = defaultdict(Counter)
         self.docmap = {}
+        self.doc_lengths = {}
 
     def __add_document(self, doc_id:int, text:str) -> None:
         tokens = preprocess(text)
         for t in tokens:
             self.index[t].add(doc_id)
             self.term_frequencies[doc_id][t] += 1
-            # self.index.setdefault(t, set()).add(doc_id)
-            # self.term_frequencies.setdefault(doc_id, Counter())[t]+=1
 
-            # if t not in self.index:
-            #     self.index[t] = set([doc_id])
-            #     continue
-            #
-            # self.index[t] = set([*self.index[t], doc_id])
+        self.doc_lengths[doc_id] = len(tokens)
 
     def get_documents(self, term:str) -> List[int]:
         t = preprocess(term)[0]
@@ -48,11 +44,11 @@ class InvertedIndex:
             self.docmap[m.id] = m
 
     def save(self) -> None:
-        # x = Path("cache/")
         cache_path = os.path.join(os.getcwd(), "cache")
         index_path = os.path.join(cache_path, "index.pkl")
         docmap_path = os.path.join(cache_path, "docmap.pkl")
         term_frequencies_path = os.path.join(cache_path, "term_frequencies.pkl")
+        doc_lengths_path = os.path.join(cache_path, "doc_lengths.pkl")
         os.makedirs(cache_path, exist_ok=True)
         with open(index_path, "wb") as f:
             pickle.dump(self.index, f)
@@ -63,11 +59,16 @@ class InvertedIndex:
         with open(term_frequencies_path, "wb") as f:
             pickle.dump(self.term_frequencies, f)
 
+        with open(doc_lengths_path, "wb") as f:
+            pickle.dump(self.doc_lengths, f)
+            # self.doc_lengths = pickle.load(f)
+
     def load(self) ->None:
         cache_path = os.path.join(os.getcwd(), "cache")
         index_path = os.path.join(cache_path, "index.pkl")
         docmap_path = os.path.join(cache_path, "docmap.pkl")
         term_frequencies_path = os.path.join(cache_path, "term_frequencies.pkl")
+        doc_lengths_path = os.path.join(cache_path, "doc_lengths.pkl")
         if not os.path.exists(index_path):
             raise FileNotFoundError(f"{index_path} doesn't exist")
 
@@ -82,6 +83,9 @@ class InvertedIndex:
 
         with open(term_frequencies_path, "rb") as f:
             self.term_frequencies = pickle.load(f)
+
+        with open(doc_lengths_path, "rb") as f:
+            self.doc_lengths = pickle.load(f)
 
     def get_tf(self, doc_id:int, term:str) -> int:
         token = preprocess(term)
@@ -113,9 +117,18 @@ class InvertedIndex:
 
         return bm25
 
-    def get_bm25_tf(self, doc_id:int, term:str, k1: float = BM25_K1) -> float:
+    def __get_average_doc_length(self) -> float:
+        if len(self.doc_lengths) == 0:
+            return 0.0
+
+        return sum(self.doc_lengths.values()) / len(self.doc_lengths)
+
+    def get_bm25_tf(self, doc_id:int, term:str, k1: float = BM25_K1, b: float = BM25_B) -> float:
         base_tf = self.get_tf(doc_id, term)
-        bm25_tf = (base_tf * (k1 + 1)) / (base_tf + k1)
+        doc_length = self.doc_lengths[doc_id]
+        avg_doc_length = self.__get_average_doc_length()
+        length_norm = 1 - b + b * (doc_length / avg_doc_length)
+        bm25_tf = (base_tf * (k1 + 1)) / (base_tf + k1 * length_norm)
         
         return bm25_tf
 

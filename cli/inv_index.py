@@ -1,11 +1,12 @@
 from collections import defaultdict, Counter
 import math
 import os
-from typing import Counter as CounterType, Dict, List, Set
+from typing import Counter as CounterType, Dict, List, Set, Tuple
 import pickle
 
 from search_utils import BM25_B, BM25_K1
 from tokens import Movie, load_movies, preprocess
+from functools import reduce
 
 
 class InvertedIndex:
@@ -131,4 +132,24 @@ class InvertedIndex:
         bm25_tf = (base_tf * (k1 + 1)) / (base_tf + k1 * length_norm)
         
         return bm25_tf
+
+    def bm25(self, doc_id: int, term: str) -> float:
+        tf = self.get_bm25_tf(doc_id, term)
+        idf = self.get_bm25_idf(term)
+
+        return tf * idf
+
+    def bm25_search(self, query: str, limit: int) -> List[Tuple[Movie, float]]:
+        q = preprocess(query)
+        scores:Dict[int, float] = {}
+
+        for doc_id, m in self.docmap.items():
+            score = reduce(lambda accumulator, term: accumulator + self.bm25(doc_id, term), q, 0.0)
+            scores[doc_id] = score
+
+        result = sorted(scores.items(), reverse=True, key=lambda i: i[1])[:limit]
+        # print(result)
+        r = [(self.docmap[d[0]], d[1]) for d in result]
+        # print(r)
+        return r
 

@@ -78,6 +78,9 @@ def main() -> None:
     bm25_tf.add_argument("term", type=str, help="Term")
     bm25_tf.add_argument("k1", type=float, nargs="?", default=BM25_K1, help="Saturation constant, used for tuning")
     bm25_tf.add_argument("b", type=float, nargs="?", default=BM25_B, help="Tunable BM25 B parameter")
+
+    bm25_search = subparsers.add_parser("bm25search", help="Performs BM25 search for a given doc_id and term")
+    bm25_search.add_argument("query", type=str, help="Search query")
     
     args = parser.parse_args()
 
@@ -120,7 +123,12 @@ def main() -> None:
             index.load()
             bm25tf = index.get_bm25_tf(args.doc_id, args.term, args.k1, args.b)
             print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}")
-
+        case "bm25search":
+            index = InvertedIndex()
+            index.load()
+            items = index.bm25_search(args.query, 5)
+            for m, score in items:
+                print(f"({m.id}) {m.title} - Score: {score:.2f}")
 
         case _:
             parser.print_help()

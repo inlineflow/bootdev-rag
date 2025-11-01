@@ -59,18 +59,22 @@ def main():
                 print()
             # print(res)
         case "chunk":
-            text = args.text.split()
+            words = args.text.split()
             size = args.chunk_size
             overlap = args.overlap
             i = 0
-            count = 0
+            n_words = len(words)
             chunks = []
-            while count < len(text):
-                chunk = text[i * size:(i + 1) * size - overlap]
-                print(chunk)
+            while i < n_words - overlap:
+                chunk = words[i:i+size]
                 chunks.append(chunk)
-                i += 1
-                count += len(chunk)
+                i += size - overlap
+                # chunk = words[start:end]
+                # start += (size - overlap)
+                # end = (start + size)
+                # print(chunk)
+                # if len(chunk) != 0:
+                #     chunks.append(chunk)
             
 
             print(f"Chunking {len(args.text.strip())} characters") 

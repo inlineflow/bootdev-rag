@@ -3,20 +3,20 @@ import json
 from typing import List
 import string
 from nltk.stem import PorterStemmer
+from lib.movie import Movie, load_movies
 
-
-@dataclass
-class Movie:
-    id: int
-    title: str
-    description: str
-
-
-def load_movies() -> List[Movie]:
-    with open("data/movies.json") as f:
-        data = json.load(f)
-        movies = [Movie(**movie_dict) for movie_dict in data.get("movies", [])]
-        return movies
+# @dataclass
+# class Movie:
+#     id: int
+#     title: str
+#     description: str
+#
+#
+# def load_movies() -> List[Movie]:
+#     with open("data/movies.json") as f:
+#         data = json.load(f)
+#         movies = [Movie(**movie_dict) for movie_dict in data.get("movies", [])]
+#         return movies
 
 
 def tokenize(s: str) -> List[str]:

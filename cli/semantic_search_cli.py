@@ -4,6 +4,7 @@ import argparse
 import re
 from lib.movie import load_movies
 from lib.semantic_search import (
+    ChunkedSemanticSearch,
     SemanticSearch,
     embed_query_text,
     verify_embeddings,
@@ -39,6 +40,8 @@ def main():
     semantic_chunk_cmd.add_argument("text", type=str)
     semantic_chunk_cmd.add_argument("--max-chunk-size", type=int, default=4, help="Max sentences per chunk")
     semantic_chunk_cmd.add_argument("--overlap", type=int, default=0)
+
+    embed_chunks_cmd = subparsers.add_parser("embed_chunks")
 
 
     args = parser.parse_args()
@@ -97,6 +100,11 @@ def main():
             for index, c in enumerate(chunks):
                 print(f"{index + 1}. {" ".join(c)}")
                 
+        case "embed_chunks":
+            movies = load_movies()
+            cs = ChunkedSemanticSearch()
+            embeddings = cs.load_or_create_chunk_embeddings(movies)
+            print(f"Generated {len(embeddings)} chunked embeddings")
         case _:
             parser.print_help()
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from json import load
 import re
 from lib.movie import load_movies
 from lib.semantic_search import (
@@ -42,6 +43,10 @@ def main():
     semantic_chunk_cmd.add_argument("--overlap", type=int, default=0)
 
     embed_chunks_cmd = subparsers.add_parser("embed_chunks")
+
+    search_chunked_cmd = subparsers.add_parser("search_chunked")
+    search_chunked_cmd.add_argument("text", type=str)
+    search_chunked_cmd.add_argument("--limit", type=int, default=5)
 
 
     args = parser.parse_args()
@@ -105,6 +110,19 @@ def main():
             cs = ChunkedSemanticSearch()
             embeddings = cs.load_or_create_chunk_embeddings(movies)
             print(f"Generated {len(embeddings)} chunked embeddings")
+        case "search_chunked":
+            movies = load_movies()
+            cs = ChunkedSemanticSearch()
+            embeddings = cs.load_or_create_chunk_embeddings(movies)
+            # print(len(embeddings))
+            # print(cs.chunk_metadata)
+            results = cs.search_chunks(args.text, args.limit)
+            for i, r in enumerate(results):
+                TITLE = r.get("title")
+                SCORE = r.get("score")
+                DESCRIPTION = r.get("document")
+                print(f"\n{i+1}. {TITLE} (score: {SCORE:.4f})")
+                print(f"   {DESCRIPTION}...")
         case _:
             parser.print_help()
 

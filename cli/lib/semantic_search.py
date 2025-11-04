@@ -7,13 +7,14 @@ import numpy as np
 
 from lib.movie import Movie, load_movies
 
+SCORE_PRECISION = 4
 
 class SemanticSearch:
     def __init__(self, model_name:str = "all-MiniLM-L6-v2") -> None:
         self.model = SentenceTransformer(model_name)
         self.embeddings = None
         self.documents = None
-        self.document_map = {}
+        self.document_map:Dict[int, Movie] = {}
         self.cache_path = os.path.join(os.getcwd(), "cache")
         self.embeddings_cache_path = os.path.join(
             self.cache_path, "movie_embeddings.npy"
@@ -51,7 +52,7 @@ class SemanticSearch:
             with open(self.embeddings_cache_path, "rb") as f:
                 self.embeddings = np.load(f)
 
-            if len(self.embeddings) == len(self.embeddings):
+            if len(self.embeddings) == len(self.documents):
                 print("Cache matched")
                 return self.embeddings
 
@@ -112,15 +113,15 @@ def cosine_similarity(vec1, vec2):
     return dot_product / (norm1 * norm2)
 
 def chunk_semantically(text:str, chunk_size: int, overlap: int) -> List[str]:
-            sentences = re.split(r"(?<=[.!?])\s+", text)
-            size = chunk_size
+            sentences = re.split(r"(?<=[.!?])\s+", text.strip())
             i = 0
-            n_sentences = len(sentences)
             chunks = []
-            while i < n_sentences - overlap:
-                chunk = sentences[i:i+size]
-                chunks.append(chunk)
-                i += size - overlap
+            while i < len(sentences):
+                chunk_sentences = sentences[i:i+chunk_size]
+                if not chunk_sentences:
+                    break
+                chunks.append(" ".join(chunk_sentences))
+                i += max(1, chunk_size - overlap)
 
             return chunks
 
@@ -141,7 +142,7 @@ class ChunkedSemanticSearch(SemanticSearch):
         self.documents = documents
         all_chunks:List[str] = []
         metadata:List[Dict] = []
-        for doc_idx, doc in enumerate(documents):
+        for movie_idx, doc in enumerate(documents):
             self.document_map[doc.id] = doc
             if doc.description == "":
                 continue
@@ -149,7 +150,7 @@ class ChunkedSemanticSearch(SemanticSearch):
             chunks = chunk_semantically(doc.description, 4, 1)
             all_chunks.extend(chunks)
             for chunk_idx, _ in enumerate(chunks):
-                meta = {"movie_idx": doc_idx, "chunk_idx": chunk_idx, "total_chunks": len(chunks)}
+                meta = {"movie_idx": movie_idx, "chunk_idx": chunk_idx, "total_chunks": len(chunks)}
                 metadata.append(meta)
 
         self.chunk_embeddings = self.model.encode(all_chunks, show_progress_bar=True)
@@ -176,8 +177,57 @@ class ChunkedSemanticSearch(SemanticSearch):
                 self.chunk_embeddings = np.load(f)
 
             with open(self.metadata_cache_path, "r") as f:
-                self.chunk_metadata = json.load(f)
+                self.chunk_metadata = json.load(f)["chunks"]
 
+
+            print(self.chunk_embeddings.shape[0], len(self.chunk_metadata))
             return self.chunk_embeddings
 
         return self.build_chunk_embeddings(documents)
+
+    def search_chunks(self, query:str, limit:int = 10):
+        if self.chunk_embeddings is None or self.chunk_metadata is None:
+            raise ValueError("Embeddings are not loaded. Load or build embeddings first")
+        q = self.generate_embedding(query)
+        chunk_scores = []
+
+        for i in range(len(self.chunk_embeddings)):
+            e = self.chunk_embeddings[i]
+            cmeta = self.chunk_metadata[i]
+            score = cosine_similarity(q, e)
+            chunk_scores.append(
+                     {
+                        "movie_idx": cmeta["movie_idx"],
+                        "chunk_idx": cmeta["chunk_idx"],
+                        "score": score
+                     })
+
+        score_map: Dict[int, float] = {}
+        for cs in chunk_scores:
+            movie_idx = cs["movie_idx"] 
+            new_score = cs["score"]
+            if movie_idx not in score_map or new_score > score_map[movie_idx]:
+                score_map[movie_idx] = new_score
+
+        scores_sorted = sorted(score_map.items(), key=lambda item: item[1], reverse=True)[:limit]
+        results = []
+        for ss in scores_sorted:
+            movie_idx = ss[0]
+            doc = self.documents[movie_idx]
+            doc_id = doc.id
+            score = ss[1]
+            movie = self.document_map[doc_id]
+            title = movie.title
+            document = movie.description
+            metadata = {}
+            item = {
+              "id": doc_id,
+              "title": title,
+              "document": document[:100],
+              "score": round(score, SCORE_PRECISION),
+              "metadata": metadata or {}
+            }
+            results.append(item)
+
+        return results
+

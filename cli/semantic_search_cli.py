@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import re
 from lib.movie import load_movies
 from lib.semantic_search import (
     SemanticSearch,
@@ -34,6 +35,11 @@ def main():
     chunk_cmd.add_argument("--chunk-size", default=200, type=int, help="Number of words in a chunk")
     chunk_cmd.add_argument("--overlap", default=0, type=int, help="Number of words shared between neighboring chunks")
 
+    semantic_chunk_cmd = subparsers.add_parser("semantic_chunk")
+    semantic_chunk_cmd.add_argument("text", type=str)
+    semantic_chunk_cmd.add_argument("--max-chunk-size", type=int, default=4, help="Max sentences per chunk")
+    semantic_chunk_cmd.add_argument("--overlap", type=int, default=0)
+
 
     args = parser.parse_args()
 
@@ -63,24 +69,33 @@ def main():
             size = args.chunk_size
             overlap = args.overlap
             i = 0
-            n_words = len(words)
+            n_sentences = len(words)
             chunks = []
-            while i < n_words - overlap:
+            while i < n_sentences - overlap:
                 chunk = words[i:i+size]
                 chunks.append(chunk)
                 i += size - overlap
-                # chunk = words[start:end]
-                # start += (size - overlap)
-                # end = (start + size)
-                # print(chunk)
-                # if len(chunk) != 0:
-                #     chunks.append(chunk)
             
 
             print(f"Chunking {len(args.text.strip())} characters") 
             for index, c in enumerate(chunks):
                 print(f"{index + 1}. {" ".join(c)}")
 
+        case "semantic_chunk":
+            sentences = re.split(r"(?<=[.!?])\s+", args.text)
+            size = args.max_chunk_size
+            overlap = args.overlap
+            i = 0
+            n_sentences = len(sentences)
+            chunks = []
+            while i < n_sentences - overlap:
+                chunk = sentences[i:i+size]
+                chunks.append(chunk)
+                i += size - overlap
+
+            print(f"Semantically chunking {len(args.text.strip())} characters") 
+            for index, c in enumerate(chunks):
+                print(f"{index + 1}. {" ".join(c)}")
                 
         case _:
             parser.print_help()

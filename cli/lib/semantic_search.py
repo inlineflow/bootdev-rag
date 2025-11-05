@@ -1,13 +1,20 @@
 import os
 import re
 import json
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, TypedDict
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
 from lib.movie import Movie, load_movies
 
 SCORE_PRECISION = 4
+
+class SemanticSearchResult(TypedDict):
+    id: int
+    title: str
+    document: str
+    score: float
+    metadata: Dict[str, Any]
 
 class SemanticSearch:
     def __init__(self, model_name:str = "all-MiniLM-L6-v2") -> None:
@@ -191,6 +198,7 @@ class ChunkedSemanticSearch(SemanticSearch):
 
         return self.build_chunk_embeddings(documents)
 
+
     def search_chunks(self, query:str, limit:int = 10):
         if self.chunk_embeddings is None or self.chunk_metadata is None:
             raise ValueError("Embeddings are not loaded. Load or build embeddings first")
@@ -216,7 +224,7 @@ class ChunkedSemanticSearch(SemanticSearch):
                 score_map[movie_idx] = new_score
 
         scores_sorted = sorted(score_map.items(), key=lambda item: item[1], reverse=True)[:limit]
-        results = []
+        results: List[SemanticSearchResult] = []
         for ss in scores_sorted:
             movie_idx = ss[0]
             doc = self.documents[movie_idx]
@@ -226,7 +234,7 @@ class ChunkedSemanticSearch(SemanticSearch):
             title = movie.title
             document = movie.description
             metadata = {}
-            item = {
+            item: SemanticSearchResult = {
               "id": doc_id,
               "title": title,
               "document": document[:100],

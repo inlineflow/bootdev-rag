@@ -114,13 +114,19 @@ def cosine_similarity(vec1, vec2):
 
 def chunk_semantically(text:str, chunk_size: int, overlap: int) -> List[str]:
             sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+            if sentences == []:
+                return []
+
+            sentences = [s.strip() for s in sentences]
             i = 0
             chunks = []
             while i < len(sentences):
                 chunk_sentences = sentences[i:i+chunk_size]
                 if not chunk_sentences:
                     break
-                chunks.append(" ".join(chunk_sentences))
+                chunk = " ".join(chunk_sentences).strip()
+                if chunk:
+                    chunks.append(chunk)
                 i += max(1, chunk_size - overlap)
 
             return chunks

@@ -7,6 +7,7 @@ from lib.movie import load_movies
 from lib.semantic_search import (
     ChunkedSemanticSearch,
     SemanticSearch,
+    chunk_semantically,
     embed_query_text,
     verify_embeddings,
     verify_model,
@@ -90,20 +91,21 @@ def main():
                 print(f"{index + 1}. {" ".join(c)}")
 
         case "semantic_chunk":
-            sentences = re.split(r"(?<=[.!?])\s+", args.text)
-            size = args.max_chunk_size
-            overlap = args.overlap
-            i = 0
-            n_sentences = len(sentences)
-            chunks = []
-            while i < n_sentences - overlap:
-                chunk = sentences[i:i+size]
-                chunks.append(chunk)
-                i += size - overlap
+            chunks = chunk_semantically(args.text, args.max_chunk_size, args.overlap)
+            # sentences = re.split(r"(?<=[.!?])\s+", args.text)
+            # size = args.max_chunk_size
+            # overlap = args.overlap
+            # i = 0
+            # n_sentences = len(sentences)
+            # chunks = []
+            # while i < n_sentences - overlap:
+            #     chunk = sentences[i:i+size]
+            #     chunks.append(chunk)
+            #     i += size - overlap
 
             print(f"Semantically chunking {len(args.text.strip())} characters") 
             for index, c in enumerate(chunks):
-                print(f"{index + 1}. {" ".join(c)}")
+                print(f"{index + 1}. {c}")
                 
         case "embed_chunks":
             movies = load_movies()

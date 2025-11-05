@@ -18,6 +18,17 @@ def normalize(values: list[float]) -> list[float]:
     result = [(score - low) / k for score in values]
     return result
 
+def normalize2(values: list[float], low:float, high:float) -> list[float]:
+    if len(values) == 0:
+        return []
+    if high == low:
+        return list(itertools.repeat(1.0, len(values)))
+
+    k = high - low
+    result = [(score - low) / k for score in values]
+    return result
+
+
 class HybridSearch():
     def __init__(self, documents: List[Movie]) -> None:
         self.documents = documents
@@ -46,6 +57,9 @@ class HybridSearch():
         minbm25 = min(bm25_scores)
         semantic_scores = [i["score"] for i in semantic]
         max_semantic_score = max(semantic_scores)
+        min_semantic_score = min(semantic_scores)
+        max_score = max(maxbm25, max_semantic_score)
+        min_score = min(minbm25, min_semantic_score)
         # for i in range(len(bm25)):
         for i in range(5):
             keyword_item = bm25[i]

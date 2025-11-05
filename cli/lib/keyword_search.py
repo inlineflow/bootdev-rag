@@ -20,6 +20,11 @@ class InvertedIndex:
         self.term_frequencies = defaultdict(Counter)
         self.docmap = {}
         self.doc_lengths = {}
+        self.cache_path = os.path.join(os.getcwd(), "cache")
+        self.index_path = os.path.join(self.cache_path, "index.pkl")
+        self.docmap_path = os.path.join(self.cache_path, "docmap.pkl")
+        self.term_frequencies_path = os.path.join(self.cache_path, "term_frequencies.pkl")
+        self.doc_lengths_path = os.path.join(self.cache_path, "doc_lengths.pkl")
 
     def __add_document(self, doc_id:int, text:str) -> None:
         tokens = preprocess(text)
@@ -45,47 +50,37 @@ class InvertedIndex:
             self.docmap[m.id] = m
 
     def save(self) -> None:
-        cache_path = os.path.join(os.getcwd(), "cache")
-        index_path = os.path.join(cache_path, "index.pkl")
-        docmap_path = os.path.join(cache_path, "docmap.pkl")
-        term_frequencies_path = os.path.join(cache_path, "term_frequencies.pkl")
-        doc_lengths_path = os.path.join(cache_path, "doc_lengths.pkl")
-        os.makedirs(cache_path, exist_ok=True)
-        with open(index_path, "wb") as f:
+        os.makedirs(self.cache_path, exist_ok=True)
+        with open(self.index_path, "wb") as f:
             pickle.dump(self.index, f)
 
-        with open(docmap_path, "wb") as f:
+        with open(self.docmap_path, "wb") as f:
             pickle.dump(self.docmap, f)
 
-        with open(term_frequencies_path, "wb") as f:
+        with open(self.term_frequencies_path, "wb") as f:
             pickle.dump(self.term_frequencies, f)
 
-        with open(doc_lengths_path, "wb") as f:
+        with open(self.doc_lengths_path, "wb") as f:
             pickle.dump(self.doc_lengths, f)
             # self.doc_lengths = pickle.load(f)
 
     def load(self) ->None:
-        cache_path = os.path.join(os.getcwd(), "cache")
-        index_path = os.path.join(cache_path, "index.pkl")
-        docmap_path = os.path.join(cache_path, "docmap.pkl")
-        term_frequencies_path = os.path.join(cache_path, "term_frequencies.pkl")
-        doc_lengths_path = os.path.join(cache_path, "doc_lengths.pkl")
-        if not os.path.exists(index_path):
-            raise FileNotFoundError(f"{index_path} doesn't exist")
+        if not os.path.exists(self.index_path):
+            raise FileNotFoundError(f"{self.index_path} doesn't exist")
 
-        if not os.path.exists(docmap_path):
-            raise FileNotFoundError(f"{docmap_path} doesn't exist")
+        if not os.path.exists(self.docmap_path):
+            raise FileNotFoundError(f"{self.docmap_path} doesn't exist")
 
-        with open(index_path, "rb") as f:
+        with open(self.index_path, "rb") as f:
             self.index = pickle.load(f)
 
-        with open(docmap_path, "rb") as f:
+        with open(self.docmap_path, "rb") as f:
             self.docmap = pickle.load(f)
 
-        with open(term_frequencies_path, "rb") as f:
+        with open(self.term_frequencies_path, "rb") as f:
             self.term_frequencies = pickle.load(f)
 
-        with open(doc_lengths_path, "rb") as f:
+        with open(self.doc_lengths_path, "rb") as f:
             self.doc_lengths = pickle.load(f)
 
     def get_tf(self, doc_id:int, term:str) -> int:

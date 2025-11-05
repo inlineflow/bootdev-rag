@@ -3,7 +3,7 @@
 import argparse
 from typing import List
 from search_utils import BM25_B, BM25_K1
-from inv_index import InvertedIndex
+from lib.keyword_search import InvertedIndex
 from tokens import Movie, preprocess
 
 
